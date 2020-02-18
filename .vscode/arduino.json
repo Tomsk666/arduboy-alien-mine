@@ -1,0 +1,5 @@
+{
+    "board": "arduboy:avr:arduboy",
+    "sketch": "Alien_Mine.ino",
+    "port": "COM4"
+}
