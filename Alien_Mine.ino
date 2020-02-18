@@ -310,22 +310,25 @@ void check_hit(){
           //levels
           if (score==300){
             level=2;
-            alien_speed_level = 70;
+            alien_speed_level = 60;
             level_up();
           }
           if (score==500){
             level=3;
-            alien_speed_level = 60;
+            alien_speed_level = 50;
+            arduboy.setFrameRate(65);
             level_up();
           }
           if (score==800){
             level=4;
-            alien_speed_level = 50;
+            alien_speed_level = 40;
+            arduboy.setFrameRate(70);
             level_up();
           }
           if (score==1200){
             level=5;
-            alien_speed_level = 40;
+            alien_speed_level = 30;
+            arduboy.setFrameRate(80);
             level_up();
           }
           //now stop the current bullet, so ready to fire again
