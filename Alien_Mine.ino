@@ -288,7 +288,8 @@ void aliens_move(){
         if (aliens[i].area > 3){
           sound.tone(NOTE_C1,1000);
           draw_alien_attack(aliens[i].zone, 3);
-          aliens.removeAt(i);
+          //aliens.removeAt(i);
+          aliens.clear(); //clear all current aliens instead
           lives--;
           if (lives==0){
             gameState=GameState::Lose;
