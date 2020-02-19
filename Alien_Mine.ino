@@ -6,13 +6,11 @@
 */
 
 //TODO:
-// Record last zone that alien was generated in so next alien cannot be the same zone or stagger them, 
-//     record num of frames, and dont release next one until say 10 frames has passed?
 // Make 5 areas instead of 4
-// Add lights - blue for hit, red for bitten
 #include <Arduboy2.h>
 #include <ArduboyTones.h>
 #include <ArduboyTonesPitches.h>
+#include <EEPROM.h>
 Arduboy2 arduboy;
 ArduboyTones sound(arduboy.audio.enabled); //enable sound (Arduboy Tones lib)
 
@@ -50,6 +48,7 @@ int counter=0; //just used for flashing text on title
 void setup() {
   arduboy.begin(); // initialize Arduboy
   arduboy.setFrameRate(60);
+  load_high_score(); //load the high score from EEPROM
   setUpZones(); //Setup the array of zone co-ordinates that make up the mine shaft
   current_zone = 0; //start at top zone (0 is top, then they go clockwise)
   bullet_in_play = false;
@@ -146,6 +145,7 @@ void loop() {
     case GameState::Lose:
       sound.tone(NOTE_C4,500, NOTE_C3,500, NOTE_C1,1000);
       high_score=(score>high_score) ? score : high_score;  // set the new hi-score if it is one
+      save_high_score(); //write the high score to EEPROM
       arduboy.clear();
       arduboy.setCursor(8,0);
       arduboy.setTextSize(2);
@@ -429,4 +429,21 @@ void bullet_move(){
           }
         }
     }
+}
+
+//High score EEPROM save Methods
+void save_high_score(){
+  uint16_t address = 256;
+
+  uint32_t scoreData = high_score;
+  EEPROM.update(address, scoreData);
+  address += sizeof(uint32_t);
+}
+void load_high_score(){
+  uint16_t address = 256;
+
+  uint32_t scoreData = 0;
+  EEPROM.get(address, scoreData);
+  address += sizeof(uint32_t);
+  high_score = scoreData;
 }
