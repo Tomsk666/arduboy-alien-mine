@@ -437,7 +437,7 @@ void save_high_score(){
   uint16_t address = 256;
 
   uint32_t scoreData = high_score;
-  EEPROM.update(address, scoreData);
+  EEPROM.put(address, scoreData); //Tried using .update here but values seemed to go wrong!
   address += sizeof(uint32_t);
 }
 void load_high_score(){
