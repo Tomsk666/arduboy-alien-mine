@@ -2,22 +2,28 @@
     Alien Graphics by Jamie Millichamp
     February 2020
     Copyright 2020 Tom Millichamp
+    Thanks to @Pharap for code improvements
 */
 
 //TODO:
 // Record last zone that alien was generated in so next alien cannot be the same zone or stagger them, 
 //     record num of frames, and dont release next one until say 10 frames has passed?
-// make explosion graphics use a loop with a sprite sheet
 // Make 5 areas instead of 4
 // Add lights - blue for hit, red for bitten
 #include <Arduboy2.h>
 #include <ArduboyTones.h>
 #include <ArduboyTonesPitches.h>
-
 Arduboy2 arduboy;
 ArduboyTones sound(arduboy.audio.enabled); //enable sound (Arduboy Tones lib)
 
-enum gamestates {title,gameplay,lose,pause} gamestate;
+enum class GameState : uint8_t
+{
+  Title,
+  Gameplay,
+  Lose,
+  Pause,
+};
+GameState gameState;
 
 //create the 6 zones that make up the mine shaft
 Point MIDDLE(65,32); // middle of the mine shaft
@@ -40,13 +46,10 @@ int alien_speed_level = 80; //level 1 speed
 int8_t lives = 3;
 int power_up = 0; //used for power up level for bomb
 int counter=0; //just used for flashing text on title
-String sounds="on"; 
 
 void setup() {
   arduboy.begin(); // initialize Arduboy
   arduboy.setFrameRate(60);
-  if (sounds=="on")
-        arduboy.audio.on();
   setUpZones(); //Setup the array of zone co-ordinates that make up the mine shaft
   current_zone = 0; //start at top zone (0 is top, then they go clockwise)
   bullet_in_play = false;
@@ -59,15 +62,15 @@ void setup() {
   alien_speed_level = 80; //level 1 speed
   aliens.clear(); //clear any aliens in the alien array
   arduboy.clear();
-  //show splash screen graphics for 2 secs
+  //show splash screen graphics for 2.5 secs
   arduboy.drawBitmap(0,0,Splash_Screen,128,48,WHITE);
   arduboy.setCursor(48, 42);
   arduboy.print(F("Alien"));
   arduboy.setCursor(48, 52);
   arduboy.print(F("Mine!"));
   arduboy.display();
-  delay(2000);
-  gamestate=title;
+  delay(2500);
+  gameState=GameState::Title;
 }
 
 // MAIN LOOP //
@@ -75,12 +78,13 @@ void loop() {
   if (!arduboy.nextFrame())
     return;
 
-  switch (gamestate)
+  switch (gameState)
   {
-    case title:
+    case GameState::Title:
       arduboy.clear();
       arduboy.print(F("Settings:\n"));
-      arduboy.print("   B - Sound: " + sounds);
+      arduboy.print(F("   B - Sound: "));
+      arduboy.print((arduboy.audio.enabled()) ? F("on") : F("off"));
       arduboy.print(F("\nIn Play:"));
       arduboy.print(F("\n   L/R - Move"));
       arduboy.print(F("\n   A - Missile"));
@@ -96,19 +100,16 @@ void loop() {
       arduboy.display();
       arduboy.pollButtons();
       if (arduboy.justPressed(A_BUTTON)){
-        gamestate=gameplay;
+        gameState=GameState::Gameplay;
       }
       // B Button Toggle Sound On/Off
       if (arduboy.justPressed(B_BUTTON)) {
-        sounds = (sounds=="off") ? "on" : "off";
         arduboy.audio.toggle();
       }
-      if (sounds=="on")
-        arduboy.audio.on();
     break;
 
 
-    case gameplay:
+    case GameState::Gameplay:
       arduboy.clear();
       arduboy.print(score);
       //arduboy.print(F("L "));
@@ -117,7 +118,7 @@ void loop() {
       arduboy.print(lives);
       arduboy.pollButtons();
       if (arduboy.justPressed(UP_BUTTON) || arduboy.justPressed(DOWN_BUTTON)) {
-        gamestate=pause;
+        gameState=GameState::Pause;
         break;
       }
       if (arduboy.justPressed(B_BUTTON) && power_up==20){
@@ -142,7 +143,7 @@ void loop() {
     break;
 
 
-    case lose:
+    case GameState::Lose:
       sound.tone(NOTE_C4,500, NOTE_C3,500, NOTE_C1,1000);
       high_score=(score>high_score) ? score : high_score;  // set the new hi-score if it is one
       arduboy.clear();
@@ -164,7 +165,7 @@ void loop() {
     break;
 
 
-    case pause:
+    case GameState::Pause:
           // just keep looping until they press B button
           arduboy.setCursor((WIDTH/2)-16, HEIGHT/2);
           arduboy.print(F("PAUSED"));
@@ -176,7 +177,7 @@ void loop() {
             //arduboy.pollButtons();
             }while (!arduboy.pressed(B_BUTTON));
           arduboy.waitNoButtons();
-          gamestate = gameplay;
+          gameState=GameState::Gameplay;
       break;
   }
   arduboy.display();
@@ -288,7 +289,7 @@ void aliens_move(){
           aliens.removeAt(i);
           lives--;
           if (lives==0){
-            gamestate=lose;
+            gameState=GameState::Lose;
           }
         }
       }
@@ -358,25 +359,24 @@ void level_up(){
 
 void draw_explosion(){
   sound.tones(explosion_sound);
-  Sprites::drawOverwrite(Zones[bullet_zone].area[bullet_area].x-4,Zones[bullet_zone].area[bullet_area].y-4,explosion_1, 0);
-  arduboy.display(); delay(20); 
-  Sprites::drawOverwrite(Zones[bullet_zone].area[bullet_area].x-4,Zones[bullet_zone].area[bullet_area].y-4,explosion_2, 0);
-  arduboy.display(); delay(20); 
-  Sprites::drawOverwrite(Zones[bullet_zone].area[bullet_area].x-4,Zones[bullet_zone].area[bullet_area].y-4,explosion_3, 0);
-  arduboy.display(); delay(20); 
-  Sprites::drawOverwrite(Zones[bullet_zone].area[bullet_area].x-4,Zones[bullet_zone].area[bullet_area].y-4,explosion_4, 0);
-  arduboy.display(); delay(20); 
-  Sprites::drawOverwrite(Zones[bullet_zone].area[bullet_area].x-4,Zones[bullet_zone].area[bullet_area].y-4,explosion_5,0);
-  arduboy.display(); delay(20); 
+  const auto x = (Zones[bullet_zone].area[bullet_area].x - 4);
+  const auto y = (Zones[bullet_zone].area[bullet_area].y - 4);
+  for(uint8_t frame = 0; frame < 5; ++frame)
+  {
+    Sprites::drawOverwrite(x, y, explosions, 0);
+    arduboy.display();
+    delay(20);
+  }
 }
 
 void draw_alien_attack(int8_t zone, int8_t area){
-  //alien has reached you, so draw a nice big scary attack as you lose a life!
-  //Sprites::drawOverwrite(Zones[zone].area[area].x,Zones[zone].area[area].y,Alien_Attack, 0);
+  //alien reached top of mine!
+  arduboy.setRGBled(255, 0, 0);
   arduboy.setCursor(MIDDLE.x-18,MIDDLE.y-4);
   arduboy.print(F("BITTEN!"));
   arduboy.display();
   delay(1000);
+  arduboy.setRGBled(0, 0, 0);
 }
 
 void add_alien(){

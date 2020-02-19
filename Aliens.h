@@ -19,28 +19,29 @@ class Alien
 
 
 // Now create a List collection to hold all the aliens
-template<int N>
+//template<int N>
+template<size_t capacity>
 struct AlienList
 {
     private:
-        Alien array[N];
+        Alien array[capacity];
         uint8_t next;
 
     public:	
         // Returns the number of Enemys currently in the list
-        uint8_t getCount(void) const { return next; }
+        uint8_t getCount() const { return next; }
         
         // Returns the maximum number of Enemys the list can hold
-        uint8_t getCapacity(void) const { return N; }
+        uint8_t getCapacity() const { return capacity; }
         
         // Returns true if the list is full
-        bool isFull(void) const { return getCount() == getCapacity(); }
+        bool isFull() const { return getCount() == getCapacity(); }
         
         // Returns true if the list is empty
-        bool isEmpty(void) const { return getCount() == 0; }
+        bool isEmpty() const { return getCount() == 0; }
         
         // Clears the list (by cheating)
-        void clear(void) { next = 0; }
+        void clear() { next = 0; }
         
         // Returns true if the Enemy was added
         // Returns false if the list is already full
