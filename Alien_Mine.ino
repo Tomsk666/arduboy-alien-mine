@@ -270,8 +270,10 @@ void draw_mine_bomb(){
   sound.tones(bomb_explosion_sound);
   //flash the screen for the Nuke!
   for (int i=0;i<3;i++){
+    arduboy.setRGBled(255,0,0);
     arduboy.invert(true);
     delay(100);
+    arduboy.setRGBled(0,0,0);
     arduboy.invert(false);
     delay(100);
   }
