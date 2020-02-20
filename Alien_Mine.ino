@@ -23,8 +23,7 @@ enum class GameState : uint8_t
 };
 GameState gameState;
 
-//create the 6 zones that make up the mine shaft
-Point MIDDLE(65,32); // middle of the mine shaft
+Point middle(65,32); // middle of the mine shaft
 #include "ZonesSetup.h"
 #include "Aliens.h"
 //create an empty array of aliens
@@ -44,6 +43,17 @@ int alien_speed_level = 80; //level 1 speed
 int8_t lives = 3;
 int power_up = 0; //used for power up level for bomb
 int counter=0; //just used for flashing text on title
+constexpr uint16_t high_score_address = 256; //for EEPROM save data
+
+int levels[]{
+            //score, level, alienSpeed, frameRate//
+            300, 2, 60, 65, //level 2
+            500, 3, 50, 65, //level 3
+            800, 4, 40, 70, //level 4
+            1200,5, 30, 75, //level 5
+            1500,6, 30, 70  //level 6
+          };
+
 
 void setup() {
   arduboy.begin(); // initialize Arduboy
@@ -103,7 +113,7 @@ void loop() {
       }
       // B Button Toggle Sound On/Off
       if (arduboy.justPressed(B_BUTTON)) {
-        arduboy.audio.toggle();
+        Arduboy2Audio::toggle();
       }
     break;
 
@@ -111,10 +121,11 @@ void loop() {
     case GameState::Gameplay:
       arduboy.clear();
       arduboy.print(score);
-      //arduboy.print(F("L "));
       Sprites::drawOverwrite(110,0,heart,0); //heart icon for lives
       arduboy.setCursor(120,0);
       arduboy.print(lives);
+      arduboy.setCursor(0,56);
+      arduboy.print(level);
       arduboy.pollButtons();
       if (arduboy.justPressed(UP_BUTTON) || arduboy.justPressed(DOWN_BUTTON)) {
         gameState=GameState::Pause;
@@ -130,7 +141,6 @@ void loop() {
       draw_cannon(); //draw players cannon 
       draw_zones(); //draw the mine
       draw_bomb_progress_bar();
-      
       player_move(); //check if player is moving & move if is
       player_fire(); //check if player has fired a missile
       aliens_move();
@@ -157,25 +167,20 @@ void loop() {
       arduboy.print(F("\nPress B to replay"));
       arduboy.display();
       arduboy.waitNoButtons();
-      do{
-        //arduboy.pollButtons();
-        }while (!arduboy.pressed(B_BUTTON));
+      do{}while (!arduboy.pressed(B_BUTTON));
       arduboy.waitNoButtons();
       setup();
     break;
 
 
     case GameState::Pause:
-          // just keep looping until they press B button
           arduboy.setCursor((WIDTH/2)-16, HEIGHT/2);
           arduboy.print(F("PAUSED"));
           arduboy.setCursor((WIDTH/2)-16, (HEIGHT/2)+12);
           arduboy.print(F("Press B"));
           arduboy.display();
           arduboy.waitNoButtons();
-          do{
-            //arduboy.pollButtons();
-            }while (!arduboy.pressed(B_BUTTON));
+          do{}while (!arduboy.pressed(B_BUTTON));
           arduboy.waitNoButtons();
           gameState=GameState::Gameplay;
       break;
@@ -191,8 +196,8 @@ void draw_zones(){
   for (int i=0;i<6;i++){
     arduboy.drawLine (Zones[i].top_left.x,Zones[i].top_left.y,Zones[i].top_right.x,Zones[i].top_right.y,WHITE);
     arduboy.drawLine (Zones[i].bot_left.x,Zones[i].bot_left.y,Zones[i].bot_right.x,Zones[i].bot_right.y,WHITE);
-    arduboy.drawLine (Zones[i].top_left.x,Zones[i].top_left.y,MIDDLE.x,MIDDLE.y);
-    arduboy.drawLine (Zones[i].top_right.x,Zones[i].top_right.y,MIDDLE.x,MIDDLE.y);
+    arduboy.drawLine (Zones[i].top_left.x,Zones[i].top_left.y,middle.x,middle.y);
+    arduboy.drawLine (Zones[i].top_right.x,Zones[i].top_right.y,middle.x,middle.y);
 
   }
 }
@@ -206,8 +211,6 @@ void draw_bomb_progress_bar(){
 }
 
 void draw_cannon(){
-  //draws the players cannon
-  //either uncomment the next line & use that instead of the Sprites in switch
   //arduboy.fillCircle(Zones[current_zone].cannon.x,Zones[current_zone].cannon.y,3,WHITE);
   switch (current_zone)
   {
@@ -261,7 +264,6 @@ void draw_aliens(){
         Sprites::drawOverwrite(Zones[draw_zone].area[draw_area].x-6,Zones[draw_zone].area[draw_area].y-6,Alien_12,0);
         break;
       }
-      //arduboy.fillCircle(Zones[draw_zone].area[draw_area].x,Zones[draw_zone].area[draw_area].y,draw_area+1,WHITE);
 		}
 }
 
@@ -311,30 +313,40 @@ void check_hit(){
           //add to the bomb power up bar
           if (power_up < 20)
             power_up+=2;
-          //levels
-          if (score==300){
-            level=2;
-            alien_speed_level = 60;
-            level_up();
+          //levels - check score & increase level
+          for (int i=0;i<=20;i+=4){
+            if (score==levels[i]){
+              level = levels[i+1];
+              alien_speed_level = levels[i+2];
+              arduboy.setFrameRate(levels[i+3]);
+              level_up();
+            }
           }
-          if (score==500){
-            level=3;
-            alien_speed_level = 50;
-            arduboy.setFrameRate(65);
-            level_up();
-          }
-          if (score==800){
-            level=4;
-            alien_speed_level = 40;
-            arduboy.setFrameRate(70);
-            level_up();
-          }
-          if (score==1200){
-            level=5;
-            alien_speed_level = 30;
-            arduboy.setFrameRate(80);
-            level_up();
-          }
+          // if (score==300){
+          //   level=2;
+          //   alien_speed_level = 60;
+          //   arduboy.setFrameRate(65);
+          //   level_up();
+          // }
+          // if (score==500){
+          //   level=3;
+          //   alien_speed_level = 50;
+          //   arduboy.setFrameRate(65);
+          //   level_up();
+          // }
+          // if (score==800){
+          //   level=4;
+          //   alien_speed_level = 40;
+          //   arduboy.setFrameRate(70);
+          //   level_up();
+          // }
+          // if (score==1200){
+          //   level=5;
+          //   alien_speed_level = 30;
+          //   arduboy.setFrameRate(80);
+          //   level_up();
+          // }
+
           //now stop the current bullet, so ready to fire again
           bullet_in_play=false;
           bullet_area=2;
@@ -354,9 +366,7 @@ void level_up(){
   arduboy.print("Press B");
   arduboy.display();
   arduboy.waitNoButtons();
-  do{
-    //arduboy.pollButtons();
-  }while (!arduboy.pressed(B_BUTTON));
+  do{}while (!arduboy.pressed(B_BUTTON));
   arduboy.waitNoButtons();
 }
 
@@ -375,7 +385,7 @@ void draw_explosion(){
 void draw_alien_attack(int8_t zone, int8_t area){
   //alien reached top of mine!
   arduboy.setRGBled(255, 0, 0);
-  arduboy.setCursor(MIDDLE.x-18,MIDDLE.y-4);
+  arduboy.setCursor(middle.x-18,middle.y-4);
   arduboy.print(F("BITTEN!"));
   arduboy.display();
   delay(1000);
@@ -433,18 +443,12 @@ void bullet_move(){
 }
 
 //High score EEPROM save Methods
-void save_high_score(){
-  uint16_t address = 256;
-
-  uint32_t scoreData = high_score;
-  EEPROM.put(address, scoreData); //Tried using .update here but values seemed to go wrong!
-  address += sizeof(uint32_t);
+void save_high_score()
+{
+  EEPROM.put(high_score_address, high_score);
 }
-void load_high_score(){
-  uint16_t address = 256;
 
-  uint32_t scoreData = 0;
-  EEPROM.get(address, scoreData);
-  address += sizeof(uint32_t);
-  high_score = scoreData;
+void load_high_score()
+{
+  EEPROM.get(high_score_address, high_score);
 }
