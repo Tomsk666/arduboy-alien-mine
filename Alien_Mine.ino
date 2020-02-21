@@ -23,7 +23,7 @@ enum class GameState : uint8_t
 };
 GameState gameState;
 
-Point middle(65,32); // middle of the mine shaft
+const Point middle(65,32); // middle of the mine shaft
 #include "ZonesSetup.h"
 #include "Aliens.h"
 //create an empty array of aliens
@@ -322,16 +322,15 @@ void check_hit(){
           if (power_up < 20)
             power_up+=2;
 
-          for (size_t index = (level-1)*1; index < 5; ++index)
+          //check if we levelled up
+          if (score == levels[level-1].score)
           {
-            if (score == levels[index].score)
-            {
-              level = levels[index].level;
-              alien_speed_level = levels[index].alien_speed;
-              arduboy.setFrameRate(levels[index].frame_rate);
-              level_up();
-            }
+            alien_speed_level = levels[level-1].alien_speed;
+            arduboy.setFrameRate(levels[level-1].frame_rate);
+            level = levels[level-1].level;
+            level_up();
           }
+
           //now stop the current bullet, so ready to fire again
           bullet_in_play=false;
           bullet_area=2;
