@@ -132,8 +132,6 @@ void loop() {
       arduboy.print(lives);
       arduboy.setCursor(0,56);
       arduboy.print(level);
-      arduboy.print(F(":"));
-      arduboy.print(alien_speed_level);
       arduboy.pollButtons();
       if (arduboy.justPressed(UP_BUTTON) || arduboy.justPressed(DOWN_BUTTON)) {
         gameState=GameState::Pause;
